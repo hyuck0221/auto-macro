@@ -31,11 +31,13 @@ jobs:
         run: ./Scripts/run-tests.sh
       - name: Build app bundle
         run: ./Scripts/package-app.sh release "${AUTO_MACRO_VERSION#v}"
+      - name: Install DMG packaging tool
+        run: brew install create-dmg
       - name: Create ZIP and DMG
         run: |
           mkdir -p release
           ditto -c -k --keepParent "dist/Auto Macro.app" "release/AutoMacro-${AUTO_MACRO_VERSION}-macos-${{ matrix.arch }}.zip"
-          hdiutil create -volname "Auto Macro" -srcfolder "dist/Auto Macro.app" -ov -format UDZO "release/AutoMacro-${AUTO_MACRO_VERSION}-macos-${{ matrix.arch }}.dmg"
+          ./Scripts/create-dmg.sh "dist/Auto Macro.app" "release/AutoMacro-${AUTO_MACRO_VERSION}-macos-${{ matrix.arch }}.dmg"
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.arch }}

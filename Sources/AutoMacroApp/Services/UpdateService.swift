@@ -48,13 +48,28 @@ final class UpdateService {
             throw URLError(.badServerResponse)
         }
 
+        return try Self.updateRelease(
+            from: data,
+            currentVersion: currentVersion,
+            architecture: Self.currentArchitecture
+        )
+    }
+
+    nonisolated static func updateRelease(
+        from data: Data,
+        currentVersion: String,
+        architecture: String
+    ) throws -> UpdateRelease? {
         let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
         guard !release.draft, !release.prerelease,
               Self.isNewer(release.tagName, than: currentVersion) else { return nil }
 
-        let architecture = Self.currentArchitecture
         let expectedName = "AutoMacro-\(release.tagName)-macos-\(architecture).zip"
-        guard let asset = release.assets.first(where: { $0.name == expectedName }) else {
+        let asset = release.assets.first { $0.name == expectedName }
+            ?? release.assets.first {
+                $0.name.lowercased().hasSuffix("-macos-\(architecture.lowercased()).zip")
+            }
+        guard let asset else {
             throw UpdateError.missingAsset
         }
         return UpdateRelease(version: release.tagName, downloadURL: asset.browserDownloadURL)
@@ -141,7 +156,7 @@ final class UpdateService {
         #endif
     }
 
-    private static func isNewer(_ candidate: String, than current: String) -> Bool {
+    nonisolated static func isNewer(_ candidate: String, than current: String) -> Bool {
         func components(_ value: String) -> [Int] {
             value.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
                 .split(separator: ".")

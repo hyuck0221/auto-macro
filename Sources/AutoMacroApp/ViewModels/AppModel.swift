@@ -144,8 +144,10 @@ final class AppModel: ObservableObject {
         Task {
             await refreshProviders()
             await refreshCaptureTargetsAsync()
-            await checkForUpdates()
         }
+        // Update discovery must not wait for provider/network probes or for
+        // ScreenCaptureKit, which can be blocked on privacy permission state.
+        Task { await checkForUpdates() }
     }
 
     var conditionalStepCount: Int {
@@ -388,6 +390,9 @@ final class AppModel: ObservableObject {
         _ = permissionService.request(.screenRecording)
         if inputRecordingOptions.recordsAnyInput {
             _ = permissionService.request(.accessibility)
+            // Macro playback has a separate CoreGraphics post-event gate even
+            // though macOS presents it in the Accessibility settings pane.
+            _ = permissionService.request(.eventPosting)
             _ = permissionService.request(.inputMonitoring)
         }
         refreshPermissions()

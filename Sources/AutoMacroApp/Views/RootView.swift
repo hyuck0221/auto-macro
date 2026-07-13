@@ -158,7 +158,7 @@ struct RootView: View {
 
     private var updateSummary: some View {
         ZStack {
-            Text("v\(model.appVersion)")
+            Text(model.updateState == .upToDate ? "v\(model.appVersion) · 최신" : "v\(model.appVersion)")
                 .font(.caption2)
                 .foregroundStyle(AMTheme.textSecondary)
             HStack {
@@ -171,6 +171,19 @@ struct RootView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
                     .disabled(model.updateState == .downloading)
+                } else if model.updateState == .checking {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .help("업데이트 확인 중")
+                } else {
+                    Button {
+                        Task { await model.checkForUpdates() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(AMTheme.textSecondary)
+                    .help("업데이트 다시 확인")
                 }
             }
         }
