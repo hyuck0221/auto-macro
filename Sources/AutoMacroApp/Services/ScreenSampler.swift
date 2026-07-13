@@ -1,7 +1,9 @@
 import CoreGraphics
 import Foundation
 import ImageIO
-import ScreenCaptureKit
+// See ScreenRecorder: the SDK has not yet annotated these Objective-C types
+// for Swift concurrency, while this actor serializes all use of them.
+@preconcurrency import ScreenCaptureKit
 
 public enum ScreenSamplerError: LocalizedError, Sendable {
     case displayUnavailable(CGDirectDisplayID)

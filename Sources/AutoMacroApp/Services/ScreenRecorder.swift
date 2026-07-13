@@ -3,7 +3,9 @@ import CoreGraphics
 import CoreMedia
 import CoreVideo
 import Foundation
-import ScreenCaptureKit
+// ScreenCaptureKit types such as SCShareableContent have no Sendable
+// annotations in the macOS 15 SDK, even though this actor confines access.
+@preconcurrency import ScreenCaptureKit
 
 public enum ScreenRecordingTarget: Sendable {
     case display(CGDirectDisplayID)
