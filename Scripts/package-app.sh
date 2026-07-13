@@ -84,9 +84,11 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 PLIST
 
 chmod +x "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
-# Ad-hoc signing is intentionally used so releases do not require an Apple
-# Developer account. It lets macOS validate the bundle's internal integrity,
-# but it is not a Developer ID signature.
-codesign --force --deep --sign - "$APP_DIR" >/dev/null
+# Keep the designated requirement tied to the bundle identifier, not the
+# generated ad-hoc CDHash. TCC can then retain granted privacy permissions
+# across in-app updates without requiring an Apple Developer certificate.
+codesign --force --deep --sign - \
+    --requirements '=designated => identifier "app.automacro.desktop"' \
+    "$APP_DIR" >/dev/null
 
 echo "$APP_DIR"

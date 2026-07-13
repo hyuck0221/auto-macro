@@ -85,6 +85,7 @@ final class AppModel: ObservableObject {
     private var globalEscapeMonitor: Any?
     private var localEscapeMonitor: Any?
     private var workspaceActivationObserver: (any NSObjectProtocol)?
+    private var appActivationObserver: (any NSObjectProtocol)?
     private var activeScreenChangeDetectionEnabled = true
 
     init(
@@ -131,6 +132,15 @@ final class AppModel: ObservableObject {
         ) ?? ""
 
         refreshPermissions()
+        appActivationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshPermissions()
+            }
+        }
         Task {
             await refreshProviders()
             await refreshCaptureTargetsAsync()

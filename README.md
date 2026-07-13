@@ -55,3 +55,5 @@ Auto Macro는 사용자 본인이 조작 권한을 가진 앱과 서비스에서
 `v0.1.0`처럼 `v`로 시작하는 태그를 push하면 GitHub Actions가 Apple Silicon(`arm64`)과 Intel(`x86_64`)용 ZIP·DMG를 GitHub Release에 올립니다. 앱은 시작 시 `hyuck0221/auto-macro`의 최신 안정 릴리스를 확인하고, 맞는 아키텍처 ZIP을 내려받아 앱을 교체한 뒤 다시 실행합니다.
 
 Apple Developer ID가 필요하지 않으며 GitHub Secrets도 설정할 필요가 없습니다. 다만 Apple이 발급한 Developer ID/notarization이 없으므로, 처음 설치할 때 macOS가 확인되지 않은 개발자 경고를 표시할 수 있습니다. 이 경우 Finder에서 앱을 control-클릭한 뒤 **열기**를 한 번 선택하면 됩니다. 이후 인앱 업데이트는 동일한 방식으로 자동 설치·재시작됩니다.
+
+배포 번들은 Apple 계정 없이도 권한을 업데이트 간에 유지할 수 있도록 고정된 번들 ID(`app.automacro.desktop`) 기반의 ad-hoc 지정 요구사항으로 서명됩니다. 이 변경 전 릴리스에서 권한을 부여했다면, 이 버전으로 업데이트한 뒤에만 화면 기록·입력 모니터링·손쉬운 사용 권한을 한 번 다시 허용해 주세요.
