@@ -25,7 +25,11 @@ openssl req -new -newkey rsa:3072 -x509 -sha256 -days 7300 -nodes \
     -keyout "$KEY_PATH" \
     -out "$CERT_PATH" >/dev/null 2>&1
 
-openssl pkcs12 -export -legacy \
+PKCS12_ARGUMENTS=(-export)
+if openssl pkcs12 -help 2>&1 | grep -q -- '-legacy'; then
+    PKCS12_ARGUMENTS+=(-legacy)
+fi
+openssl pkcs12 "${PKCS12_ARGUMENTS[@]}" \
     -inkey "$KEY_PATH" \
     -in "$CERT_PATH" \
     -passout "pass:$PASSWORD" \

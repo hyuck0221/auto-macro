@@ -30,6 +30,7 @@ jobs:
       - name: Run tests
         run: ./Scripts/run-tests.sh
       - name: Import stable release signing identity
+        timeout-minutes: 3
         env:
           SIGNING_P12_BASE64: ${{ secrets.AUTO_MACRO_SIGNING_P12_BASE64 }}
           SIGNING_P12_PASSWORD: ${{ secrets.AUTO_MACRO_SIGNING_P12_PASSWORD }}
@@ -41,26 +42,31 @@ jobs:
           KEYCHAIN_PATH="$RUNNER_TEMP/auto-macro-signing.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
           P12_PATH="$RUNNER_TEMP/auto-macro-signing.p12"
-          CERT_PATH="$RUNNER_TEMP/auto-macro-signing.pem"
+          echo "Decoding signing identity…"
           printf '%s' "$SIGNING_P12_BASE64" | base64 --decode > "$P12_PATH"
-          openssl pkcs12 -in "$P12_PATH" -clcerts -nokeys -legacy \
-            -passin "pass:$SIGNING_P12_PASSWORD" -out "$CERT_PATH"
+          echo "Creating temporary keychain…"
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          echo "Importing signing identity…"
           security import "$P12_PATH" -k "$KEYCHAIN_PATH" \
             -P "$SIGNING_P12_PASSWORD" -T /usr/bin/codesign
-          security add-trusted-cert -d -r trustRoot -k "$KEYCHAIN_PATH" "$CERT_PATH"
+          echo "Configuring non-interactive private-key access…"
           security set-key-partition-list -S apple-tool:,apple: -s \
             -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychains -d user -s "$KEYCHAIN_PATH"
-          SIGNING_IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | awk '/Auto Macro GitHub Release Signing/ {print $2; exit}')"
+          security list-keychains -d user -s \
+            "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
+          echo "Reading stable certificate hash…"
+          SIGNING_IDENTITY="$(security find-certificate -Z \
+            -c "Auto Macro GitHub Release Signing" "$KEYCHAIN_PATH" \
+            | awk '/SHA-1 hash:/ {print $3; exit}')"
           if [[ ! "$SIGNING_IDENTITY" =~ ^[[:xdigit:]]{40}$ ]]; then
             echo "Unable to locate the imported Auto Macro signing identity." >&2
             exit 1
           fi
           echo "AUTO_MACRO_CODESIGN_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
           echo "AUTO_MACRO_SELF_SIGNED_CERT_SHA1=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          echo "Stable signing identity is ready."
       - name: Build app bundle
         run: ./Scripts/package-app.sh release "${AUTO_MACRO_VERSION#v}"
       - name: Install DMG packaging tool
