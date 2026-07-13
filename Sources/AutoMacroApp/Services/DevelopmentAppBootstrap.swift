@@ -72,11 +72,27 @@ enum DevelopmentAppBootstrap {
         )
         try infoData.write(to: stagingApp.appendingPathComponent("Contents/Info.plist"), options: .atomic)
 
-        try run("/usr/bin/codesign", arguments: [
-            "--force", "--deep", "--sign", "-",
-            "--requirements", "=designated => identifier \"\(bundleIdentifier)\"",
-            stagingApp.path
-        ])
+        let signingIdentity = ProcessInfo.processInfo.environment["AUTO_MACRO_CODESIGN_IDENTITY"] ?? "-"
+        let selfSignedCertificateSHA1 = ProcessInfo.processInfo.environment[
+            "AUTO_MACRO_SELF_SIGNED_CERT_SHA1"
+        ]
+        var signingArguments = ["--force", "--deep", "--sign", signingIdentity]
+        if signingIdentity == "-" {
+            signingArguments += [
+                "--requirements", "=designated => identifier \"\(bundleIdentifier)\""
+            ]
+        } else if let selfSignedCertificateSHA1, !selfSignedCertificateSHA1.isEmpty {
+            signingArguments += [
+                "--options", "runtime",
+                "--timestamp=none",
+                "--requirements",
+                "=designated => identifier \"\(bundleIdentifier)\" and anchor = H\"\(selfSignedCertificateSHA1)\""
+            ]
+        } else {
+            signingArguments += ["--options", "runtime", "--timestamp"]
+        }
+        signingArguments.append(stagingApp.path)
+        try run("/usr/bin/codesign", arguments: signingArguments)
 
         if fileManager.fileExists(atPath: installedApp.path) {
             try fileManager.removeItem(at: installedApp)

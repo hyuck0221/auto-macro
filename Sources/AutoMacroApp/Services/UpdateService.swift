@@ -91,6 +91,7 @@ final class UpdateService {
         guard FileManager.default.fileExists(atPath: downloadedApp.appendingPathComponent("Contents/MacOS/AutoMacro").path) else {
             throw UpdateError.invalidArchive
         }
+        try verifyUpdateSignatureIfConfigured(downloadedApp)
 
         let installedApp = Bundle.main.bundleURL
         guard installedApp.pathExtension == "app" else { throw UpdateError.unsupportedInstallation }
@@ -146,6 +147,20 @@ final class UpdateService {
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else { throw UpdateError.invalidArchive }
+    }
+
+    private func verifyUpdateSignatureIfConfigured(_ appURL: URL) throws {
+        guard let certificateSHA1 = Bundle.main.object(
+            forInfoDictionaryKey: "AutoMacroSigningCertificateSHA1"
+        ) as? String,
+        certificateSHA1.count == 40,
+        certificateSHA1.allSatisfy(\.isHexDigit)
+        else { return }
+
+        let requirement = "=designated => identifier \"app.automacro.desktop\" and anchor = H\"\(certificateSHA1)\""
+        try run("/usr/bin/codesign", arguments: [
+            "--verify", "--deep", "--strict", "--requirement", requirement, appURL.path
+        ])
     }
 
     private static var currentArchitecture: String {

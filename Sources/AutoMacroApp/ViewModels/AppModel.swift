@@ -143,7 +143,6 @@ final class AppModel: ObservableObject {
         }
         Task {
             await refreshProviders()
-            await refreshCaptureTargetsAsync()
         }
         // Update discovery must not wait for provider/network probes or for
         // ScreenCaptureKit, which can be blocked on privacy permission state.

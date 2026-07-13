@@ -56,4 +56,23 @@ Auto Macro는 사용자 본인이 조작 권한을 가진 앱과 서비스에서
 
 Apple Developer ID가 필요하지 않으며 GitHub Secrets도 설정할 필요가 없습니다. 다만 Apple이 발급한 Developer ID/notarization이 없으므로, 처음 설치할 때 macOS가 확인되지 않은 개발자 경고를 표시할 수 있습니다. 이 경우 Finder에서 앱을 control-클릭한 뒤 **열기**를 한 번 선택하면 됩니다. 이후 인앱 업데이트는 동일한 방식으로 자동 설치·재시작됩니다.
 
-배포 번들은 Apple 계정 없이도 권한을 업데이트 간에 유지할 수 있도록 고정된 번들 ID(`app.automacro.desktop`) 기반의 ad-hoc 지정 요구사항으로 서명됩니다. 이 변경 전 릴리스에서 권한을 부여했다면, 이 버전으로 업데이트한 뒤에만 화면 기록·입력 모니터링·손쉬운 사용 권한을 한 번 다시 허용해 주세요.
+기본 배포 번들은 Apple 계정 없이 설치할 수 있도록 ad-hoc 서명됩니다. macOS TCC는 ad-hoc 앱의 CDHash를 권한 항목에 포함하므로 실행 파일이 바뀌는 업데이트 뒤에는 화면 기록·입력 모니터링·손쉬운 사용 권한을 다시 허용해야 합니다. 번들 ID만 고정하거나 ad-hoc 지정 요구사항을 추가하는 것으로는 이 제한을 피할 수 없습니다.
+
+Apple Developer ID 없이 GitHub로 배포하면서 업데이트 간 TCC 앱 신원을 유지하려면 저장소 전용 자체 서명 인증서를 한 번 생성하고 동일한 개인키로 모든 릴리스를 서명할 수 있습니다. 인증서의 루트 해시와 번들 ID를 designated requirement에 고정하므로 실행 파일이 바뀌어도 macOS가 같은 앱의 업데이트로 비교할 수 있습니다.
+
+```bash
+./Scripts/create-self-signed-signing-cert.sh
+gh auth login
+gh secret set AUTO_MACRO_SIGNING_P12_BASE64 < .signing/p12-base64.txt
+gh secret set AUTO_MACRO_SIGNING_P12_PASSWORD < .signing/p12-password.txt
+```
+
+`.signing` 디렉터리는 저장소에서 제외됩니다. 안전한 오프라인 위치에도 백업하세요. 개인키를 잃거나 교체하면 기존 사용자는 권한을 다시 허용해야 합니다. 자체 서명은 Developer ID나 notarization을 대신하지 않으므로 사용자는 첫 설치 때 Finder에서 앱을 control-클릭한 후 **열기**를 선택해야 합니다. 개인정보 보호 권한도 사용자가 최초 한 번 직접 허용해야 하며 앱이 이를 자동으로 켤 수는 없습니다.
+
+기존 ad-hoc 릴리스에서 자체 서명 릴리스로 처음 전환할 때만 이전 TCC 항목을 초기화하고 권한을 다시 허용해야 합니다. 이후 동일한 `.signing` 개인키로 만든 업데이트에서는 인증서 기반 앱 신원이 유지됩니다.
+
+```bash
+tccutil reset ScreenCapture app.automacro.desktop
+tccutil reset Accessibility app.automacro.desktop
+tccutil reset ListenEvent app.automacro.desktop
+```

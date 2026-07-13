@@ -17,6 +17,12 @@ struct RecorderView: View {
                     .frame(minWidth: 265, idealWidth: 300, maxWidth: 340)
             }
         }
+        .onAppear {
+            model.refreshPermissions()
+            if model.permissions.screenRecording {
+                model.refreshCaptureTargets()
+            }
+        }
     }
 
     private var topBar: some View {

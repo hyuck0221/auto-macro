@@ -2,6 +2,7 @@
 .build/
 DerivedData/
 dist/
+.signing/
 *.xcuserstate
 *.key
 *.pem
